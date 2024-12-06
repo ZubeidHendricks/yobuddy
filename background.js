@@ -1,7 +1,58 @@
 let sessions = new Map();
 let connections = new Map();
 
-// Session Management
+chrome.runtime.onConnect.addListener((port) => {
+  console.log('New connection:', port.name);
+
+  port.onMessage.addListener(async (msg) => {
+    console.log('Message received:', msg);
+    const { type, data } = msg;
+
+    switch (type) {
+      case 'createSession':
+        console.log('Creating session...');
+        const session = new Session(Date.now().toString());
+        sessions.set(session.id, session);
+        port.postMessage({
+          type: 'sessionCreated',
+          data: { sessionId: session.id }
+        });
+        break;
+
+      case 'joinSession':
+        console.log('Joining session...');
+        const existingSession = sessions.get(data.sessionId);
+        if (existingSession) {
+          existingSession.addUser(port.name);
+          connections.set(port.name, port);
+          port.postMessage({
+            type: 'sessionJoined',
+            data: existingSession.getState()
+          });
+        }
+        break;
+
+      case 'navigation':
+        console.log('Navigation event:', msg.url);
+        const activeSession = sessions.get(data.sessionId);
+        if (activeSession) {
+          activeSession.broadcastUpdate();
+        }
+        break;
+    }
+  });
+
+  port.onDisconnect.addListener(() => {
+    console.log('Connection closed:', port.name);
+    connections.delete(port.name);
+    sessions.forEach(session => {
+      if (session.users.has(port.name)) {
+        session.removeUser(port.name);
+      }
+    });
+  });
+});
+
 class Session {
   constructor(id) {
     this.id = id;
@@ -42,52 +93,3 @@ class Session {
     };
   }
 }
-
-// Connection handling
-chrome.runtime.onConnect.addListener(port => {
-  console.log('New connection:', port.name);
-
-  port.onMessage.addListener(async (msg) => {
-    const { type, data } = msg;
-
-    switch (type) {
-      case 'createSession':
-        const session = new Session(Date.now().toString());
-        sessions.set(session.id, session);
-        port.postMessage({
-          type: 'sessionCreated',
-          data: { sessionId: session.id }
-        });
-        break;
-
-      case 'joinSession':
-        const existingSession = sessions.get(data.sessionId);
-        if (existingSession) {
-          existingSession.addUser(port.name);
-          connections.set(port.name, port);
-          port.postMessage({
-            type: 'sessionJoined',
-            data: existingSession.getState()
-          });
-        }
-        break;
-
-      case 'updateCart':
-        const cartSession = sessions.get(data.sessionId);
-        if (cartSession) {
-          cartSession.cart = data.cart;
-          cartSession.broadcastUpdate();
-        }
-        break;
-    }
-  });
-
-  port.onDisconnect.addListener(() => {
-    connections.delete(port.name);
-    sessions.forEach(session => {
-      if (session.users.has(port.name)) {
-        session.removeUser(port.name);
-      }
-    });
-  });
-});
