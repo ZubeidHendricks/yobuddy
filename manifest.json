@@ -1,20 +1,34 @@
 {
   "manifest_version": 3,
-  "name": "Co-Browse Shop",
-  "version": "1.0",
-  "description": "Browse and shop together with friends in real-time",
+  "name": "YoBuddy Shopping",
+  "version": "2.0",
+  "description": "Complete social shopping platform",
   "permissions": [
     "tabs",
     "storage",
-    "webNavigation"
+    "webNavigation",
+    "webRequest",
+    "notifications",
+    "identity"
   ],
+  "host_permissions": ["*://*/*"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "action": {
     "default_popup": "popup.html"
   },
-  "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'"
-  }
+  "content_scripts": [{
+    "matches": ["<all_urls>"],
+    "js": [
+      "content.js",
+      "features/cart.js",
+      "features/chat.js", 
+      "features/payments.js",
+      "features/social.js",
+      "features/analytics.js"
+    ],
+    "css": ["styles/main.css"]
+  }]
 }
