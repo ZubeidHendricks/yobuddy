@@ -8,9 +8,13 @@
     "storage",
     "webNavigation",
     "webRequest",
-    "notifications"
+    "notifications",
+    "identity"
   ],
   "host_permissions": ["*://*/*"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' https://www.gstatic.com/ https://*.firebaseio.com https://apis.google.com; object-src 'self'"
+  },
   "background": {
     "service_worker": "background.js",
     "type": "module"
@@ -22,13 +26,15 @@
     "matches": ["<all_urls>"],
     "js": [
       "content.js",
+      "features/auth.js",
+      "features/cart.js",
       "features/voice-chat.js",
       "features/cursor-tracking.js",
-      "features/cart.js",
       "features/chat.js",
       "features/payments.js",
       "features/social.js",
       "features/analytics.js"
     ],
     "css": ["styles/main.css"]
-  }]}
+  }]
+}
