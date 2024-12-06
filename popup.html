@@ -5,13 +5,22 @@
     body { width: 300px; padding: 10px; }
     button { width: 100%; margin: 5px 0; padding: 8px; }
     #roomId { width: 100%; margin: 5px 0; padding: 5px; }
+    .controls { margin-top: 10px; }
+    .status { margin: 10px 0; }
+    #voiceStatus { color: #666; }
   </style>
 </head>
 <body>
   <input type="text" id="roomId" placeholder="Enter room ID">
   <button id="createRoom">Create Room</button>
   <button id="joinRoom">Join Room</button>
-  <div id="status"></div>
+  <div id="status" class="status"></div>
+
+  <div class="controls">
+    <button id="toggleVoice">Start Voice Chat</button>
+    <div id="voiceStatus">Voice chat inactive</div>
+  </div>
+
   <script src="popup.js"></script>
 </body>
 </html>
