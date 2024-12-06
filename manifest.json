@@ -1,1 +1,20 @@
-{"manifest_version":3,"name":"Co-Browse Shop","version":"1.0","description":"Browse and shop together with friends in real-time","permissions":["tabs","storage","webNavigation"],"background":{"service_worker":"background.js"},"action":{"default_popup":"popup.html"},"content_security_policy":{"extension_pages":"script-src 'self'; object-src 'self'"}}
+{
+  "manifest_version": 3,
+  "name": "Co-Browse Shop",
+  "version": "1.0",
+  "description": "Browse and shop together with friends in real-time",
+  "permissions": [
+    "tabs",
+    "storage",
+    "webNavigation"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}
