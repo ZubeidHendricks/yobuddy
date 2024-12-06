@@ -1,3 +1,5 @@
+let port;
+
 document.getElementById('createRoom').addEventListener('click', () => {
   console.log('Create room clicked');
   const roomId = Math.random().toString(36).substring(7);
@@ -6,6 +8,7 @@ document.getElementById('createRoom').addEventListener('click', () => {
 });
 
 document.getElementById('joinRoom').addEventListener('click', () => {
+  console.log('Join room clicked');
   const roomId = document.getElementById('roomId').value;
   connectToRoom(roomId);
 });
@@ -17,11 +20,14 @@ function connectToRoom(roomId) {
   port.onMessage.addListener((msg) => {
     console.log('Message received:', msg);
     if (msg.type === 'sync') {
-      chrome.tabs.update({ url: msg.url });
+      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        chrome.tabs.update(tabs[0].id, {url: msg.url});
+      });
     }
   });
 
-  chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  // Listen for URL changes
+  chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
     if (changeInfo.url) {
       console.log('URL changed:', changeInfo.url);
       port.postMessage({
