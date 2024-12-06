@@ -4,21 +4,49 @@
   <style>
     body { width: 300px; padding: 10px; }
     button { width: 100%; margin: 5px 0; padding: 8px; }
-    #roomId { width: 100%; margin: 5px 0; padding: 5px; }
-    .controls { margin-top: 10px; }
-    .status { margin: 10px 0; }
-    #voiceStatus { color: #666; }
+    input { width: 100%; margin: 5px 0; padding: 5px; }
+    .section { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
+    .cart-item { display: flex; justify-content: space-between; padding: 5px; }
+    .hidden { display: none; }
   </style>
+  <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-firestore.js"></script>
 </head>
 <body>
-  <input type="text" id="roomId" placeholder="Enter room ID">
-  <button id="createRoom">Create Room</button>
-  <button id="joinRoom">Join Room</button>
-  <div id="status" class="status"></div>
+  <!-- Auth Section -->
+  <div id="authSection" class="section">
+    <div id="signedOutView">
+      <input type="email" id="email" placeholder="Email">
+      <input type="password" id="password" placeholder="Password">
+      <button id="signIn">Sign In</button>
+      <button id="signUp">Sign Up</button>
+    </div>
+    <div id="signedInView" class="hidden">
+      <span id="userDisplay"></span>
+      <button id="signOut">Sign Out</button>
+    </div>
+  </div>
 
-  <div class="controls">
-    <button id="toggleVoice">Start Voice Chat</button>
-    <div id="voiceStatus">Voice chat inactive</div>
+  <!-- Room Section -->
+  <div id="roomSection" class="section hidden">
+    <input type="text" id="roomId" placeholder="Enter room ID">
+    <button id="createRoom">Create Room</button>
+    <button id="joinRoom">Join Room</button>
+    <div id="status"></div>
+
+    <div class="controls">
+      <button id="toggleVoice">Start Voice Chat</button>
+      <div id="voiceStatus">Voice chat inactive</div>
+    </div>
+  </div>
+
+  <!-- Cart Section -->
+  <div id="cartSection" class="section hidden">
+    <h3>Shared Cart</h3>
+    <div id="cartItems"></div>
+    <div id="cartTotal">Total: $0.00</div>
+    <button id="addToCart" class="hidden">Add Current Item to Cart</button>
   </div>
 
   <script src="popup.js"></script>
