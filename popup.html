@@ -2,12 +2,16 @@
 <html>
 <head>
   <style>
-    body { width: 300px; padding: 10px; }
-    button { width: 100%; margin: 5px 0; padding: 8px; }
-    input { width: 100%; margin: 5px 0; padding: 5px; }
+    body { width: 400px; padding: 10px; }
     .section { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
-    .cart-item { display: flex; justify-content: space-between; padding: 5px; }
-    .hidden { display: none; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .chat-container { height: 200px; overflow-y: auto; }
+    .chat-message { margin: 5px 0; padding: 5px; border-radius: 5px; }
+    .chat-input { display: flex; gap: 5px; }
+    .wishlist-item { display: flex; justify-content: space-between; align-items: center; }
+    .vote-buttons { display: flex; gap: 5px; }
+    .payment-item { margin: 10px 0; padding: 10px; border: 1px solid #eee; }
   </style>
   <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-auth.js"></script>
@@ -28,25 +32,58 @@
     </div>
   </div>
 
-  <!-- Room Section -->
-  <div id="roomSection" class="section hidden">
-    <input type="text" id="roomId" placeholder="Enter room ID">
-    <button id="createRoom">Create Room</button>
-    <button id="joinRoom">Join Room</button>
-    <div id="status"></div>
+  <!-- Main Content -->
+  <div id="mainContent" class="hidden">
+    <!-- Room Controls -->
+    <div class="section">
+      <input type="text" id="roomId" placeholder="Enter room ID">
+      <button id="createRoom">Create Room</button>
+      <button id="joinRoom">Join Room</button>
+      <div id="status"></div>
+    </div>
 
-    <div class="controls">
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-button" data-tab="cart">Cart</button>
+      <button class="tab-button" data-tab="chat">Chat</button>
+      <button class="tab-button" data-tab="wishlist">Wishlist</button>
+      <button class="tab-button" data-tab="payments">Payments</button>
+    </div>
+
+    <!-- Cart Tab -->
+    <div id="cartTab" class="tab-content">
+      <div id="cartItems"></div>
+      <div id="cartTotal"></div>
+      <button id="splitPayment">Split Payment</button>
+    </div>
+
+    <!-- Chat Tab -->
+    <div id="chatTab" class="tab-content">
+      <div class="chat-container" id="chatMessages"></div>
+      <div class="chat-input">
+        <input type="text" id="chatInput" placeholder="Type a message...">
+        <button id="sendMessage">Send</button>
+        <button id="sendEmoji">😊</button>
+      </div>
+    </div>
+
+    <!-- Wishlist Tab -->
+    <div id="wishlistTab" class="tab-content">
+      <div id="wishlistItems"></div>
+      <button id="addToWishlist">Add Current Item</button>
+    </div>
+
+    <!-- Payments Tab -->
+    <div id="paymentsTab" class="tab-content">
+      <div id="pendingPayments"></div>
+      <div id="paymentHistory"></div>
+    </div>
+
+    <!-- Voice Chat Controls -->
+    <div class="section">
       <button id="toggleVoice">Start Voice Chat</button>
       <div id="voiceStatus">Voice chat inactive</div>
     </div>
-  </div>
-
-  <!-- Cart Section -->
-  <div id="cartSection" class="section hidden">
-    <h3>Shared Cart</h3>
-    <div id="cartItems"></div>
-    <div id="cartTotal">Total: $0.00</div>
-    <button id="addToCart" class="hidden">Add Current Item to Cart</button>
   </div>
 
   <script src="popup.js"></script>
