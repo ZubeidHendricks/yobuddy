@@ -9,18 +9,48 @@
     "webNavigation",
     "webRequest",
     "notifications",
-    "identity"
+    "identity",
+    "bookmarks",
+    "scripting",
+    "contextMenus",
+    "cookies",
+    "clipboardWrite"
   ],
-  "host_permissions": ["*://*/*"],
+  "host_permissions": [
+    "*://*/*",
+    "*://*.facebook.com/*",
+    "*://*.twitter.com/*",
+    "*://*.pinterest.com/*",
+    "*://*.amazon.com/*",
+    "*://*.ebay.com/*",
+    "*://*.walmart.com/*"
+  ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self' https://www.gstatic.com/ https://*.firebaseio.com https://apis.google.com; object-src 'self'"
+    "extension_pages": "script-src 'self' 'unsafe-eval' https://www.gstatic.com/ https://*.firebaseio.com https://apis.google.com https://connect.facebook.net https://platform.twitter.com; object-src 'self'"
+  },
+  "oauth2": {
+    "client_id": "YOUR_CLIENT_ID",
+    "scopes": [
+      "https://www.googleapis.com/auth/userinfo.profile",
+      "https://www.googleapis.com/auth/userinfo.email"
+    ]
   },
   "background": {
     "service_worker": "background.js",
     "type": "module"
   },
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   },
   "content_scripts": [{
     "matches": ["<all_urls>"],
@@ -33,8 +63,14 @@
       "features/chat.js",
       "features/payments.js",
       "features/social.js",
-      "features/analytics.js"
+      "features/analytics.js",
+      "features/recommendations.js",
+      "features/advanced-search.js",
+      "features/notifications.js",
+      "features/theme-manager.js",
+      "features/bookmark-sync.js"
     ],
-    "css": ["styles/main.css"]
+    "css": ["styles/main.css"],
+    "run_at": "document_end"
   }]
 }
