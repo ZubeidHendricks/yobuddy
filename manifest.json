@@ -22,6 +22,8 @@
     "matches": ["<all_urls>"],
     "js": [
       "content.js",
+      "features/voice-chat.js",
+      "features/cursor-tracking.js",
       "features/cart.js",
       "features/chat.js",
       "features/payments.js",
@@ -29,5 +31,4 @@
       "features/analytics.js"
     ],
     "css": ["styles/main.css"]
-  }]
-}
+  }]}
