@@ -1,111 +1,146 @@
 let port;
 let isConnected = false;
-let voiceChat = null;
+let auth;
+let chat;
+let wishlist;
+let cart;
+let payments;
 
-function initBackgroundConnection(roomId) {
-  if (!isConnected) {
-    port = chrome.runtime.connect({ name: roomId });
-    window.port = port;
-    isConnected = true;
-
-    port.onDisconnect.addListener(() => {
-      isConnected = false;
-      setTimeout(() => initBackgroundConnection(roomId), 1000);
-    });
-
-    port.onMessage.addListener(handleMessage);
-  }
-}
-
-function handleMessage(msg) {
-  console.log('Message received:', msg);
-  
-  switch(msg.type) {
-    case 'sync':
-      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-        chrome.tabs.update(tabs[0].id, {url: msg.url});
-      });
-      break;
-      
-    case 'signaling':
-      handleSignalingMessage(msg.data);
-      break;
-  }
-}
-
-function handleSignalingMessage(data) {
-  if (!voiceChat) return;
-
-  switch(data.type) {
-    case 'offer':
-      voiceChat.handleOffer(data.offer);
-      break;
-    case 'answer':
-      voiceChat.handleAnswer(data.answer);
-      break;
-    case 'candidate':
-      voiceChat.handleIceCandidate(data.candidate);
-      break;
-  }
-}
-
-document.getElementById('createRoom').addEventListener('click', () => {
-  const roomId = Math.random().toString(36).substring(7);
-  document.getElementById('roomId').value = roomId;
-  connectToRoom(roomId);
+// Initialize features
+document.addEventListener('DOMContentLoaded', () => {
+  auth = new Auth();
+  initTabs();
+  initAuthListeners();
 });
 
-document.getElementById('joinRoom').addEventListener('click', () => {
-  const roomId = document.getElementById('roomId').value;
-  connectToRoom(roomId);
-});
+function initTabs() {
+  const tabs = document.querySelectorAll('.tab-button');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+  });
+}
 
-document.getElementById('toggleVoice').addEventListener('click', async () => {
-  const button = document.getElementById('toggleVoice');
-  const status = document.getElementById('voiceStatus');
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.classList.remove('active');
+  });
+  document.getElementById(`${tabId}Tab`).classList.add('active');
+}
 
-  if (!voiceChat) {
-    try {
-      voiceChat = new VoiceChat(document.getElementById('roomId').value);
-      await voiceChat.createOffer();
-      button.textContent = 'Stop Voice Chat';
-      status.textContent = 'Voice chat active';
-      status.style.color = '#4CAF50';
-    } catch (error) {
-      console.error('Failed to start voice chat:', error);
-      status.textContent = 'Voice chat failed to start';
-      status.style.color = '#f44336';
-    }
-  } else {
-    voiceChat.disconnect();
-    voiceChat = null;
-    button.textContent = 'Start Voice Chat';
-    status.textContent = 'Voice chat inactive';
-    status.style.color = '#666';
-  }
-});
+function initRoom(roomId) {
+  chat = new Chat(roomId);
+  wishlist = new Wishlist(roomId);
+  cart = new SharedCart(roomId);
+  payments = new PaymentManager(roomId);
 
-function connectToRoom(roomId) {
-  console.log('Connecting to room:', roomId);
-  
-  initBackgroundConnection(roomId);
-  
-  chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-    if (changeInfo.url && isConnected && tab.active) {
-      console.log('URL changed:', changeInfo.url);
-      port.postMessage({
-        type: 'navigation',
-        url: changeInfo.url
-      });
-    }
+  // Initialize chat display
+  chat.subscribe(messages => {
+    const container = document.getElementById('chatMessages');
+    container.innerHTML = messages.map(msg => `
+      <div class="chat-message">
+        <strong>${msg.sender.displayName}:</strong> ${msg.text}
+      </div>
+    `).join('');
+    container.scrollTop = container.scrollHeight;
   });
 
-  document.getElementById('status').textContent = `Connected to room: ${roomId}`;
+  // Initialize wishlist display
+  wishlist.subscribe(items => {
+    document.getElementById('wishlistItems').innerHTML = items.map(item => `
+      <div class="wishlist-item">
+        <span>${item.title} - $${item.price}</span>
+        <div class="vote-buttons">
+          <button onclick="wishlist.voteItem('${item.id}', 1)">👍</button>
+          <button onclick="wishlist.voteItem('${item.id}', -1)">👎</button>
+        </div>
+      </div>
+    `).join('');
+  });
+
+  // Initialize cart display
+  cart.subscribe(items => {
+    document.getElementById('cartItems').innerHTML = items.map(item => `
+      <div class="cart-item">
+        <span>${item.title} - $${item.price}</span>
+        <button onclick="cart.removeItem('${item.id}')">Remove</button>
+      </div>
+    `).join('');
+    document.getElementById('cartTotal').textContent = 
+      `Total: $${cart.getTotalPrice().toFixed(2)}`;
+  });
+
+  // Initialize payments display
+  payments.subscribe(items => {
+    document.getElementById('pendingPayments').innerHTML = items
+      .filter(p => p.status === 'pending')
+      .map(payment => `
+        <div class="payment-item">
+          <div>Amount: $${payment.amount.toFixed(2)} (${payment.users.length} users)</div>
+          <div>Per user: $${payment.perUser.toFixed(2)}</div>
+          <button onclick="payments.approvePayment('${payment.id}')">Approve</button>
+        </div>
+      `).join('');
+  });
 }
 
-chrome.storage.local.get(['roomId'], function(result) {
-  if (result.roomId) {
-    document.getElementById('roomId').value = result.roomId;
-    connectToRoom(result.roomId);
-  }
+// Chat handlers
+document.getElementById('sendMessage').addEventListener('click', () => {
+  const input = document.getElementById('chatInput');
+  chat.sendMessage(input.value);
+  input.value = '';
+});
+
+document.getElementById('sendEmoji').addEventListener('click', () => {
+  chat.sendEmoji('👋');
+});
+
+// Payment handlers
+document.getElementById('splitPayment').addEventListener('click', () => {
+  const amount = cart.getTotalPrice();
+  const users = Array.from(sessions[roomId].users).map(uid => ({
+    uid,
+    displayName: userDisplayNames[uid]
+  }));
+  payments.splitPayment(amount, users);
+});
+
+// Auth handlers
+function initAuthListeners() {
+  document.getElementById('signIn').addEventListener('click', () => {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    auth.signIn(email, password);
+  });
+
+  document.getElementById('signUp').addEventListener('click', () => {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    auth.signUp(email, password);
+  });
+
+  document.getElementById('signOut').addEventListener('click', () => {
+    auth.signOut();
+  });
+
+  auth.onAuthStateChanged(user => {
+    document.getElementById('signedOutView').style.display = 
+      user ? 'none' : 'block';
+    document.getElementById('signedInView').style.display = 
+      user ? 'block' : 'none';
+    document.getElementById('mainContent').style.display = 
+      user ? 'block' : 'none';
+    
+    if (user) {
+      document.getElementById('userDisplay').textContent = 
+        `Signed in as ${user.displayName}`;
+    }
+  });
+}
+
+// Clean up on window close
+window.addEventListener('unload', () => {
+  chat?.cleanup();
+  wishlist?.cleanup();
+  cart?.cleanup();
+  payments?.cleanup();
 });
