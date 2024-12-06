@@ -1,31 +1,93 @@
-let connections = {};
-let roomData = {};
+let sessions = new Map();
+let connections = new Map();
 
-chrome.runtime.onConnect.addListener((port) => {
-  const roomId = port.name;
-  if (!connections[roomId]) {
-    connections[roomId] = [];
+// Session Management
+class Session {
+  constructor(id) {
+    this.id = id;
+    this.users = new Set();
+    this.cart = [];
+    this.chat = [];
+    this.startTime = Date.now();
   }
-  connections[roomId].push(port);
 
-  port.onMessage.addListener((msg) => {
-    if (msg.type === 'navigation') {
-      connections[roomId].forEach(p => {
-        if (p !== port) {
-          p.postMessage({
-            type: 'sync',
-            url: msg.url
+  addUser(userId) {
+    this.users.add(userId);
+    this.broadcastUpdate();
+  }
+
+  removeUser(userId) {
+    this.users.delete(userId);
+    this.broadcastUpdate();
+  }
+
+  broadcastUpdate() {
+    Array.from(this.users).forEach(userId => {
+      const connection = connections.get(userId);
+      if (connection) {
+        connection.postMessage({
+          type: 'sessionUpdate',
+          data: this.getState()
+        });
+      }
+    });
+  }
+
+  getState() {
+    return {
+      id: this.id,
+      users: Array.from(this.users),
+      cart: this.cart,
+      chat: this.chat
+    };
+  }
+}
+
+// Connection handling
+chrome.runtime.onConnect.addListener(port => {
+  console.log('New connection:', port.name);
+
+  port.onMessage.addListener(async (msg) => {
+    const { type, data } = msg;
+
+    switch (type) {
+      case 'createSession':
+        const session = new Session(Date.now().toString());
+        sessions.set(session.id, session);
+        port.postMessage({
+          type: 'sessionCreated',
+          data: { sessionId: session.id }
+        });
+        break;
+
+      case 'joinSession':
+        const existingSession = sessions.get(data.sessionId);
+        if (existingSession) {
+          existingSession.addUser(port.name);
+          connections.set(port.name, port);
+          port.postMessage({
+            type: 'sessionJoined',
+            data: existingSession.getState()
           });
         }
-      });
+        break;
+
+      case 'updateCart':
+        const cartSession = sessions.get(data.sessionId);
+        if (cartSession) {
+          cartSession.cart = data.cart;
+          cartSession.broadcastUpdate();
+        }
+        break;
     }
   });
 
   port.onDisconnect.addListener(() => {
-    connections[roomId] = connections[roomId].filter(p => p !== port);
-    if (connections[roomId].length === 0) {
-      delete connections[roomId];
-      delete roomData[roomId];
-    }
+    connections.delete(port.name);
+    sessions.forEach(session => {
+      if (session.users.has(port.name)) {
+        session.removeUser(port.name);
+      }
+    });
   });
 });
