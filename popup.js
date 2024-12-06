@@ -1,4 +1,18 @@
 let port;
+let isConnected = false;
+
+// Create a background connection
+function initBackgroundConnection(roomId) {
+  if (!isConnected) {
+    port = chrome.runtime.connect({ name: roomId });
+    isConnected = true;
+
+    port.onDisconnect.addListener(() => {
+      isConnected = false;
+      initBackgroundConnection(roomId);
+    });
+  }
+}
 
 document.getElementById('createRoom').addEventListener('click', () => {
   console.log('Create room clicked');
@@ -15,7 +29,8 @@ document.getElementById('joinRoom').addEventListener('click', () => {
 
 function connectToRoom(roomId) {
   console.log('Connecting to room:', roomId);
-  port = chrome.runtime.connect({ name: roomId });
+  
+  initBackgroundConnection(roomId);
   
   port.onMessage.addListener((msg) => {
     console.log('Message received:', msg);
@@ -26,9 +41,12 @@ function connectToRoom(roomId) {
     }
   });
 
+  // Store roomId in local storage
+  chrome.storage.local.set({ roomId: roomId });
+
   // Listen for URL changes
   chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
-    if (changeInfo.url) {
+    if (changeInfo.url && isConnected) {
       console.log('URL changed:', changeInfo.url);
       port.postMessage({
         type: 'navigation',
@@ -40,3 +58,11 @@ function connectToRoom(roomId) {
   document.getElementById('status').textContent = `Connected to room: ${roomId}`;
   console.log('Room connection established');
 }
+
+// Reconnect on popup open if room exists
+chrome.storage.local.get(['roomId'], function(result) {
+  if (result.roomId) {
+    document.getElementById('roomId').value = result.roomId;
+    connectToRoom(result.roomId);
+  }
+});
