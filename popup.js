@@ -2,15 +2,59 @@ let port;
 let isConnected = false;
 let currentSession = null;
 let username = localStorage.getItem('username');
-let features = {};
 
+// Feature instances
+let voiceChat = null;
+let screenRecorder = null;
+let dealFinder = null;
+let productComparison = null;
+let cursorSharing = null;
+let priceTracker = null;
+
+// Error handling
+function showError(message) {
+  const errorDiv = document.getElementById('error');
+  errorDiv.textContent = message;
+  errorDiv.style.display = 'block';
+  setTimeout(() => {
+    errorDiv.style.display = 'none';
+  }, 5000);
+}
+
+// Check if required features are available
+function checkFeatures() {
+  const requiredFeatures = [
+    { name: 'VoiceChat', class: window.VoiceChat },
+    { name: 'ScreenRecorder', class: window.ScreenRecorder },
+    { name: 'DealFinder', class: window.DealFinder },
+    { name: 'ProductComparison', class: window.ProductComparison },
+    { name: 'CursorSharing', class: window.CursorSharing },
+    { name: 'PriceTracker', class: window.PriceTracker }
+  ];
+
+  const missingFeatures = requiredFeatures
+    .filter(feature => !feature.class)
+    .map(feature => feature.name);
+
+  if (missingFeatures.length > 0) {
+    showError(`Missing required features: ${missingFeatures.join(', ')}`);
+    return false;
+  }
+  return true;
+}
+
+// Get username
 if (!username) {
   try {
     username = prompt('Enter your name:');
-    if (!username) throw new Error('Username is required');
+    if (!username) {
+      showError('Username is required');
+      window.close();
+    }
     localStorage.setItem('username', username);
   } catch (error) {
-    showError('Failed to set username');
+    showError('Error saving username');
+    console.error('Username error:', error);
   }
 }
 
@@ -22,19 +66,22 @@ document.getElementById('createRoom').addEventListener('click', () => {
     document.getElementById('roomId').value = roomId;
     startSession(roomId);
   } catch (error) {
-    showError('Failed to create room');
-    console.error(error);
+    showError('Error creating room');
+    console.error('Create room error:', error);
   }
 });
 
 document.getElementById('joinRoom').addEventListener('click', () => {
   try {
     const roomId = document.getElementById('roomId').value;
-    if (!roomId) throw new Error('Room ID is required');
+    if (!roomId) {
+      showError('Room ID is required');
+      return;
+    }
     startSession(roomId);
   } catch (error) {
-    showError('Failed to join room');
-    console.error(error);
+    showError('Error joining room');
+    console.error('Join room error:', error);
   }
 });
 
@@ -42,42 +89,51 @@ document.getElementById('leaveSession').addEventListener('click', () => {
   try {
     endSession();
   } catch (error) {
-    showError('Failed to leave session');
-    console.error(error);
+    showError('Error leaving session');
+    console.error('Leave session error:', error);
   }
 });
 
 function startSession(roomId) {
+  if (!checkFeatures()) {
+    return;
+  }
+
   if (currentSession) {
     endSession();
   }
   
-  currentSession = roomId;
-  connectToRoom(roomId);
-  initializeFeatures(roomId);
-  document.getElementById('leaveSession').disabled = false;
+  try {
+    currentSession = roomId;
+    connectToRoom(roomId);
+    initializeFeatures(roomId);
+    document.getElementById('leaveSession').disabled = false;
+  } catch (error) {
+    showError('Error starting session');
+    console.error('Start session error:', error);
+    endSession();
+  }
 }
 
 function initializeFeatures(roomId) {
   try {
-    features = {
-      voiceChat: new VoiceChat(roomId),
-      screenRecorder: new ScreenRecorder(roomId),
-      dealFinder: new DealFinder(),
-      productComparison: new ProductComparison(),
-      cursorSharing: new CursorSharing(roomId),
-      priceTracker: new PriceTracker(roomId)
-    };
-    updateFeatureButtons(true);
+    voiceChat = new VoiceChat(roomId);
+    screenRecorder = new ScreenRecorder(roomId);
+    dealFinder = new DealFinder();
+    productComparison = new ProductComparison();
+    cursorSharing = new CursorSharing(roomId);
+    priceTracker = new PriceTracker(roomId);
+    updateFeatureStatus('All features initialized');
   } catch (error) {
-    showError('Failed to initialize features');
-    console.error(error);
+    showError('Error initializing features');
+    console.error('Feature initialization error:', error);
+    throw error;
   }
 }
 
-function updateFeatureButtons(enabled) {
-  document.getElementById('toggleVoice').disabled = !enabled;
-  document.getElementById('toggleRecord').disabled = !enabled;
+function updateFeatureStatus(message) {
+  const statusDiv = document.getElementById('feature-status');
+  statusDiv.textContent = message;
 }
 
 function connectToRoom(roomId) {
@@ -94,22 +150,22 @@ function connectToRoom(roomId) {
       port.onDisconnect.addListener(() => {
         console.log('Disconnected from room');
         isConnected = false;
+        updateFeatureStatus('Reconnecting...');
         if (currentSession) {
-          showError('Connection lost. Reconnecting...');
           setTimeout(() => connectToRoom(roomId), 1000);
         }
       });
 
       announceJoin();
       chrome.storage.local.set({ roomId: roomId });
-      showSuccess('Connected successfully');
     } catch (error) {
-      showError('Failed to connect to room');
-      console.error(error);
+      showError('Error connecting to room');
+      console.error('Connection error:', error);
+      throw error;
     }
   }
 
-  updateStatus(`Connected to room: ${roomId}`);
+  document.getElementById('status').textContent = `Connected to room: ${roomId}`;
 }
 
 function handleMessage(msg) {
@@ -122,19 +178,19 @@ function handleMessage(msg) {
       case 'voice_offer':
       case 'voice_answer':
       case 'voice_ice':
-        features.voiceChat?.handleMessage(msg);
+        voiceChat?.handleMessage(msg);
         break;
       case 'share_recording':
-        features.screenRecorder?.handleSharedRecording(msg.data);
+        screenRecorder?.handleSharedRecording(msg.data);
         break;
       case 'comparison_update':
-        features.productComparison?.handleSharedComparison(msg.data);
+        productComparison?.handleSharedComparison(msg.data);
         break;
       case 'cursor_move':
-        features.cursorSharing?.updateCursor(msg.data);
+        cursorSharing?.updateCursor(msg.data);
         break;
       case 'price_update':
-        features.priceTracker?.updateUI();
+        priceTracker?.updateUI();
         break;
       case 'error':
         showError(msg.data.message);
@@ -142,7 +198,7 @@ function handleMessage(msg) {
     }
   } catch (error) {
     showError('Error handling message');
-    console.error(error);
+    console.error('Message handling error:', error);
   }
 }
 
@@ -154,8 +210,8 @@ function handleNavigation(msg) {
       }
     });
   } catch (error) {
-    showError('Failed to navigate');
-    console.error(error);
+    showError('Error navigating to page');
+    console.error('Navigation error:', error);
   }
 }
 
@@ -166,42 +222,49 @@ function announceJoin() {
       data: { username }
     });
   } catch (error) {
-    showError('Failed to announce join');
-    console.error(error);
+    showError('Error announcing join');
+    console.error('Announce join error:', error);
   }
 }
 
 function endSession() {
-  if (port) {
-    try {
+  try {
+    if (port) {
       port.postMessage({
         type: 'user_left',
         data: { username }
       });
       port.disconnect();
-    } catch (error) {
-      console.error('Error disconnecting:', error);
     }
-  }
 
-  cleanupFeatures();
-  resetState();
-  showSuccess('Session ended');
+    cleanupFeatures();
+    resetState();
+  } catch (error) {
+    showError('Error ending session');
+    console.error('End session error:', error);
+  }
 }
 
 function cleanupFeatures() {
   try {
-    Object.values(features).forEach(feature => {
-      try {
-        feature?.cleanup();
-      } catch (error) {
-        console.error('Error cleaning up feature:', error);
-      }
-    });
-    features = {};
-    updateFeatureButtons(false);
+    voiceChat?.cleanup();
+    screenRecorder?.cleanup();
+    dealFinder?.cleanup();
+    productComparison?.cleanup();
+    cursorSharing?.cleanup();
+    priceTracker?.cleanup();
+
+    voiceChat = null;
+    screenRecorder = null;
+    dealFinder = null;
+    productComparison = null;
+    cursorSharing = null;
+    priceTracker = null;
+
+    updateFeatureStatus('Features cleaned up');
   } catch (error) {
-    console.error('Error in cleanup:', error);
+    showError('Error cleaning up features');
+    console.error('Cleanup error:', error);
   }
 }
 
@@ -210,33 +273,9 @@ function resetState() {
   currentSession = null;
   port = null;
 
-  updateStatus('Disconnected');
+  document.getElementById('status').textContent = 'Disconnected';
   document.getElementById('leaveSession').disabled = true;
   chrome.storage.local.remove('roomId');
-}
-
-function showError(message) {
-  const errorEl = document.getElementById('errorMessage');
-  errorEl.textContent = message;
-  errorEl.style.display = 'block';
-  errorEl.className = 'error';
-  setTimeout(() => {
-    errorEl.style.display = 'none';
-  }, 5000);
-}
-
-function showSuccess(message) {
-  const errorEl = document.getElementById('errorMessage');
-  errorEl.textContent = message;
-  errorEl.style.display = 'block';
-  errorEl.className = 'success';
-  setTimeout(() => {
-    errorEl.style.display = 'none';
-  }, 3000);
-}
-
-function updateStatus(message) {
-  document.getElementById('status').textContent = message;
 }
 
 // Initialize from stored session
@@ -246,8 +285,8 @@ chrome.storage.local.get(['roomId'], function(result) {
       document.getElementById('roomId').value = result.roomId;
       startSession(result.roomId);
     } catch (error) {
-      showError('Failed to restore session');
-      console.error(error);
+      showError('Error restoring session');
+      console.error('Session restore error:', error);
     }
   }
 });
