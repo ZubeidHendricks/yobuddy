@@ -1,9 +1,197 @@
-/* Additional styles for share buttons */
-.share-options {
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 320px;
+  font-family: -apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1a1a1a;
+  background: #f8f9fa;
+}
+
+#app {
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 16px;
+  background: white;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-img {
+  width: 32px;
+  height: 32px;
+}
+
+.header h1 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.main-content {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Buttons */
+.primary-button {
+  width: 100%;
+  padding: 12px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.primary-button:hover {
+  background: #0069d9;
+}
+
+.secondary-button {
+  padding: 8px 16px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.secondary-button:hover {
+  background: #218838;
+}
+
+.danger-button {
+  width: 100%;
+  padding: 12px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.danger-button:hover {
+  background: #c82333;
+}
+
+.feature-button {
+  padding: 10px 16px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.feature-button:hover {
+  background: #e9ecef;
+}
+
+.feature-button.active {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+/* Input styles */
+.input-group {
   display: flex;
   gap: 8px;
-  margin-top: 8px;
-  justify-content: center;
+}
+
+input[type="text"] {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+input[type="text"]:focus {
+  outline: none;
+  border-color: #80bdff;
+}
+
+/* Session display */
+.session-display {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.id-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 12px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.session-code {
+  font-family: monospace;
+  font-size: 14px;
+  color: #1a1a1a;
+}
+
+/* Share options */
+.share-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.share-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: start;
 }
 
 .share-button {
@@ -11,34 +199,76 @@
   border: none;
   cursor: pointer;
   padding: 8px;
-  border-radius: 4px;
+  border-radius: 6px;
   transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .share-button:hover {
-  background-color: #e9ecef;
+  background-color: #f8f9fa;
 }
 
 .share-button img {
   width: 24px;
   height: 24px;
-  object-fit: contain;
 }
 
-.session-display {
-  display: flex;
-  flex-direction: column;
+/* Features section */
+.features {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
-  margin-top: 12px;
+  margin: 16px 0;
+}
+
+/* Icons */
+.icon {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+}
+
+/* Utility classes */
+.hidden {
+  display: none;
+}
+
+/* Toast notifications */
+.toast {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
   padding: 12px;
-  background: #f8f9fa;
-  border-radius: 4px;
+  background: #343a40;
+  color: white;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: center;
+  animation: slideUp 0.3s ease-out;
+  z-index: 1000;
 }
 
-.session-display .input-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.toast.success {
+  background: #28a745;
 }
 
-/* Rest of the existing styles remain the same */
+.toast.error {
+  background: #dc3545;
+}
+
+.toast.fade-out {
+  animation: slideDown 0.3s ease-in;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(100%); opacity: 0; }
+}
