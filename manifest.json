@@ -11,6 +11,10 @@
     "activeTab"
   ],
   "host_permissions": ["<all_urls>"],
+  "web_accessible_resources": [{
+    "resources": ["features/session-recorder.js"],
+    "matches": ["<all_urls>"]
+  }],
   "action": {
     "default_popup": "popup.html"
   },
