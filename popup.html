@@ -8,12 +8,14 @@
     #roomId { width: 100%; margin: 5px 0; padding: 5px; }
     .recording { color: red; }
     #recordingStatus { margin: 5px 0; }
+    .danger { background: #dc3545; color: white; }
   </style>
 </head>
 <body>
   <input type="text" id="roomId" placeholder="Enter room ID">
   <button id="createRoom">Create Room</button>
   <button id="joinRoom">Join Room</button>
+  <button id="leaveSession" class="danger" disabled>Leave Session</button>
   <div id="status"></div>
 
   <div class="controls">
