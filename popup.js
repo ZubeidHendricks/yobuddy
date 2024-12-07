@@ -3,11 +3,15 @@ let isConnected = false;
 let recorder = null;
 let currentSession = null;
 let username = localStorage.getItem('username');
+let cursorSharing = null;
+let priceTracker = null;
 
 if (!username) {
   username = prompt('Enter your name:');
   localStorage.setItem('username', username);
 }
+
+window.username = username;
 
 document.getElementById('createRoom').addEventListener('click', () => {
   const roomId = Math.random().toString(36).substring(7);
@@ -20,10 +24,6 @@ document.getElementById('joinRoom').addEventListener('click', () => {
   startSession(roomId);
 });
 
-document.getElementById('leaveSession')?.addEventListener('click', () => {
-  endSession();
-});
-
 function startSession(roomId) {
   if (currentSession) {
     endSession();
@@ -31,15 +31,13 @@ function startSession(roomId) {
   
   currentSession = roomId;
   connectToRoom(roomId);
+  initializeFeatures(roomId);
   document.getElementById('leaveSession').disabled = false;
 }
 
-function updateUserList(users) {
-  const userList = document.getElementById('userList');
-  userList.innerHTML = `
-    <h4>Connected Users:</h4>
-    ${users.map(user => `<div>${user}</div>`).join('')}
-  `;
+function initializeFeatures(roomId) {
+  cursorSharing = new CursorSharing(roomId);
+  priceTracker = new PriceTracker(roomId);
 }
 
 function connectToRoom(roomId) {
@@ -50,23 +48,6 @@ function connectToRoom(roomId) {
     window.port = port;
     isConnected = true;
 
-    // Announce join
-    port.postMessage({
-      type: 'userJoined',
-      username: username
-    });
-
-    // Send initial state
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      if (tabs[0] && tabs[0].url) {
-        port.postMessage({
-          type: 'navigation',
-          url: tabs[0].url,
-          username: username
-        });
-      }
-    });
-
     port.onMessage.addListener((msg) => {
       console.log('Message received:', msg);
       switch(msg.type) {
@@ -74,21 +55,17 @@ function connectToRoom(roomId) {
           chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
             if (tabs[0]) {
               chrome.tabs.update(tabs[0].id, {url: msg.url});
-              document.getElementById('status').textContent = 
-                `${msg.username || 'Someone'} navigated to a new page`;
             }
           });
           break;
-        case 'userList':
-          updateUserList(msg.users);
+        case 'cursor_move':
+          cursorSharing?.updateCursor(msg.data);
           break;
-        case 'userJoined':
-          document.getElementById('status').textContent = 
-            `${msg.username} joined the room`;
+        case 'price_update':
+          priceTracker?.updateUI();
           break;
-        case 'userLeft':
-          document.getElementById('status').textContent = 
-            `${msg.username} left the room`;
+        case 'price_alert':
+          showNotification(msg.data);
           break;
       }
     });
@@ -101,28 +78,28 @@ function connectToRoom(roomId) {
       }
     });
 
-    chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-      if (changeInfo.url && tab.active && isConnected) {
-        console.log('URL changed:', changeInfo.url);
-        port.postMessage({
-          type: 'navigation',
-          url: changeInfo.url,
-          username: username
-        });
-      }
-    });
+    chrome.storage.local.set({ roomId: roomId });
   }
+}
 
-  document.getElementById('status').textContent = `Connected to room: ${roomId}`;
-  chrome.storage.local.set({ roomId: roomId });
+function showNotification(data) {
+  const notification = document.createElement('div');
+  notification.className = 'notification';
+  notification.innerHTML = `
+    <div>Price Alert!</div>
+    <div>${data.item.title}</div>
+    <div>New price: $${data.currentPrice}</div>
+  `;
+  document.body.appendChild(notification);
+  setTimeout(() => notification.remove(), 5000);
 }
 
 function endSession() {
+  cursorSharing?.cleanup();
+  cursorSharing = null;
+  priceTracker = null;
+
   if (port) {
-    port.postMessage({
-      type: 'userLeft',
-      username: username
-    });
     port.disconnect();
   }
   isConnected = false;
@@ -131,7 +108,6 @@ function endSession() {
 
   document.getElementById('status').textContent = 'Disconnected';
   document.getElementById('leaveSession').disabled = true;
-  document.getElementById('userList').innerHTML = '';
   chrome.storage.local.remove('roomId');
 }
 
