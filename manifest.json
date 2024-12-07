@@ -2,19 +2,22 @@
   "manifest_version": 3,
   "name": "YoBuddy Shopping",
   "version": "2.0",
-  "description": "Collaborative shopping platform",
+  "description": "Complete collaborative shopping platform",
   "permissions": [
     "tabs",
     "storage",
     "webNavigation",
     "scripting",
     "activeTab",
-    "contextMenus"
+    "contextMenus",
+    "desktopCapture",
+    "webRequest"
   ],
   "host_permissions": [
     "*://*.amazon.com/*",
     "*://*.ebay.com/*",
-    "*://*.walmart.com/*"
+    "*://*.walmart.com/*",
+    "*://*.bestbuy.com/*"
   ],
   "action": {
     "default_popup": "popup.html"
@@ -25,6 +28,10 @@
   "content_scripts": [{
     "matches": ["<all_urls>"],
     "js": [
+      "features/voice-chat.js",
+      "features/screen-recorder.js",
+      "features/deal-finder.js",
+      "features/product-comparison.js",
       "features/cursor-sharing.js",
       "features/price-tracker.js",
       "content.js"

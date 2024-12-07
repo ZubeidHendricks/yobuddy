@@ -1,13 +1,15 @@
 let port;
 let isConnected = false;
-let recorder = null;
 let currentSession = null;
 let username = localStorage.getItem('username');
+
+// Feature instances
+let voiceChat = null;
+let screenRecorder = null;
+let dealFinder = null;
+let productComparison = null;
 let cursorSharing = null;
 let priceTracker = null;
-let polling = null;
-let notifications = null;
-let socialFeatures = null;
 
 if (!username) {
   username = prompt('Enter your name:');
@@ -43,11 +45,12 @@ function startSession(roomId) {
 }
 
 function initializeFeatures(roomId) {
-  notifications = new NotificationSystem();
+  voiceChat = new VoiceChat(roomId);
+  screenRecorder = new ScreenRecorder(roomId);
+  dealFinder = new DealFinder();
+  productComparison = new ProductComparison();
   cursorSharing = new CursorSharing(roomId);
   priceTracker = new PriceTracker(roomId);
-  polling = new Polling(roomId);
-  socialFeatures = new SocialFeatures(roomId);
 }
 
 function connectToRoom(roomId) {
@@ -58,40 +61,7 @@ function connectToRoom(roomId) {
     window.port = port;
     isConnected = true;
 
-    port.onMessage.addListener((msg) => {
-      console.log('Message received:', msg);
-      switch(msg.type) {
-        case 'sync':
-          chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-            if (tabs[0]) {
-              chrome.tabs.update(tabs[0].id, {url: msg.url});
-            }
-          });
-          break;
-        case 'cursor_move':
-          cursorSharing?.updateCursor(msg.data);
-          break;
-        case 'price_update':
-          priceTracker?.updateUI();
-          break;
-        case 'price_alert':
-          notifications?.showPriceAlert(msg.data.item, msg.data.currentPrice);
-          break;
-        case 'poll_update':
-          polling?.handlePollUpdate(msg.data);
-          notifications?.showPollCreated(msg.data);
-          break;
-        case 'user_joined':
-          notifications?.showUserJoined(msg.data.username);
-          break;
-        case 'user_left':
-          notifications?.showUserLeft(msg.data.username);
-          break;
-        case 'share_product':
-          notifications?.showProductShared(msg.data.sharedBy, msg.data.product);
-          break;
-      }
-    });
+    port.onMessage.addListener(handleMessage);
 
     port.onDisconnect.addListener(() => {
       console.log('Disconnected from room');
@@ -101,16 +71,52 @@ function connectToRoom(roomId) {
       }
     });
 
-    // Announce join
-    port.postMessage({
-      type: 'user_joined',
-      data: { username }
-    });
-
+    announceJoin();
     chrome.storage.local.set({ roomId: roomId });
   }
 
   document.getElementById('status').textContent = `Connected to room: ${roomId}`;
+}
+
+function handleMessage(msg) {
+  console.log('Message received:', msg);
+  switch(msg.type) {
+    case 'sync':
+      handleNavigation(msg);
+      break;
+    case 'voice_offer':
+    case 'voice_answer':
+    case 'voice_ice':
+      voiceChat?.handleMessage(msg);
+      break;
+    case 'share_recording':
+      screenRecorder?.handleSharedRecording(msg.data);
+      break;
+    case 'comparison_update':
+      productComparison?.handleSharedComparison(msg.data);
+      break;
+    case 'cursor_move':
+      cursorSharing?.updateCursor(msg.data);
+      break;
+    case 'price_update':
+      priceTracker?.updateUI();
+      break;
+  }
+}
+
+function handleNavigation(msg) {
+  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+    if (tabs[0]) {
+      chrome.tabs.update(tabs[0].id, {url: msg.url});
+    }
+  });
+}
+
+function announceJoin() {
+  port.postMessage({
+    type: 'user_joined',
+    data: { username }
+  });
 }
 
 function endSession() {
@@ -122,17 +128,27 @@ function endSession() {
     port.disconnect();
   }
 
+  cleanupFeatures();
+  resetState();
+}
+
+function cleanupFeatures() {
+  voiceChat?.cleanup();
+  screenRecorder?.cleanup();
+  dealFinder?.cleanup();
+  productComparison?.cleanup();
   cursorSharing?.cleanup();
   priceTracker?.cleanup();
-  polling?.cleanup();
-  socialFeatures?.cleanup();
 
+  voiceChat = null;
+  screenRecorder = null;
+  dealFinder = null;
+  productComparison = null;
   cursorSharing = null;
   priceTracker = null;
-  polling = null;
-  notifications = null;
-  socialFeatures = null;
-  
+}
+
+function resetState() {
   isConnected = false;
   currentSession = null;
   port = null;
@@ -142,6 +158,7 @@ function endSession() {
   chrome.storage.local.remove('roomId');
 }
 
+// Initialize from stored session
 chrome.storage.local.get(['roomId'], function(result) {
   if (result.roomId) {
     document.getElementById('roomId').value = result.roomId;
