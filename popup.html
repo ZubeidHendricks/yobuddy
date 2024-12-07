@@ -1,7 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <script src="features/session-recorder.js"></script>
+  <!-- Feature Scripts -->
+  <script src="features/voice-chat.js"></script>
+  <script src="features/screen-recorder.js"></script>
+  <script src="features/deal-finder.js"></script>
+  <script src="features/product-comparison.js"></script>
+  <script src="features/cursor-sharing.js"></script>
+  <script src="features/price-tracker.js"></script>
+  
   <style>
     body { width: 300px; padding: 10px; }
     button { width: 100%; margin: 5px 0; padding: 8px; }
@@ -9,41 +16,26 @@
     .recording { color: red; }
     #recordingStatus { margin: 5px 0; }
     .danger { background: #dc3545; color: white; }
-    #userList { 
-      margin: 10px 0;
-      padding: 10px;
-      background: #f8f9fa;
-      border-radius: 4px;
-    }
-    #userList h4 {
-      margin: 0 0 10px 0;
-      color: #666;
-    }
-    .user-item {
-      padding: 5px;
-      margin: 2px 0;
-      background: #fff;
-      border-radius: 3px;
-      border: 1px solid #ddd;
-    }
+    .error { color: #dc3545; padding: 5px; display: none; }
+    .success { color: #28a745; }
   </style>
 </head>
 <body>
+  <div id="errorMessage" class="error"></div>
+  
   <input type="text" id="roomId" placeholder="Enter room ID">
   <button id="createRoom">Create Room</button>
   <button id="joinRoom">Join Room</button>
   <button id="leaveSession" class="danger" disabled>Leave Session</button>
   <div id="status"></div>
 
-  <div id="userList"></div>
-
   <div class="controls">
-    <button id="startRecording">Start Recording</button>
-    <button id="stopRecording" disabled>Stop Recording</button>
+    <button id="toggleVoice">Start Voice Chat</button>
+    <button id="toggleRecord">Start Recording</button>
     <div id="recordingStatus"></div>
   </div>
 
-  <div id="recordings"></div>
+  <div id="participantsList"></div>
   
   <script src="popup.js"></script>
 </body>
