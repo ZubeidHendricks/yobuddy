@@ -1,29 +1,34 @@
 {
   "manifest_version": 3,
   "name": "YoBuddy",
+  "description": "Shop together with friends in real-time",
   "version": "1.0.0",
-  "description": "A Chrome extension for synchronized browsing and shopping with friends",
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "scripting"
   ],
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
   },
   "content_scripts": [{
     "matches": ["<all_urls>"],
     "js": [
-      "js/VoiceChat.js",
-      "js/CommunicationHub.js",
-      "js/PaymentManager.js",
-      "js/SocialFeatures.js",
-      "js/AnalyticsTracker.js",
-      "js/AdminDashboard.js",
-      "content.js"
+      "js/content.js"
     ],
-    "css": ["css/styles.css"]
+    "css": ["css/content.css"]
   }],
-  "background": {
-    "service_worker": "background.js"
-  }
+  "web_accessible_resources": [{
+    "resources": ["images/*"],
+    "matches": ["<all_urls>"]
+  }]
 }

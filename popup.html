@@ -1,45 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <link rel="stylesheet" href="styles/main.css">
-  <!-- Load all feature scripts first -->
-  <script src="features/voice-chat.js"></script>
-  <script src="features/screen-recorder.js"></script>
-  <script src="features/deal-finder.js"></script>
-  <script src="features/product-comparison.js"></script>
-  <script src="features/cursor-sharing.js"></script>
-  <script src="features/price-tracker.js"></script>
-  <style>
-    body { width: 300px; padding: 10px; }
-    button { width: 100%; margin: 5px 0; padding: 8px; }
-    #roomId { width: 100%; margin: 5px 0; padding: 5px; }
-    .recording { color: red; }
-    #recordingStatus { margin: 5px 0; }
-    .danger { background: #dc3545; color: white; }
-    #status { margin: 10px 0; }
-    .error { color: #dc3545; }
-  </style>
+  <meta charset="UTF-8">
+  <title>YoBuddy</title>
+  <link rel="stylesheet" href="css/popup.css">
 </head>
 <body>
-  <!-- Add error container -->
-  <div id="error" class="error"></div>
+  <div id="app">
+    <div class="header">
+      <h1>YoBuddy</h1>
+    </div>
+    
+    <div class="main-content">
+      <div id="session-controls" class="section">
+        <button id="startSession" class="primary-button">Start Shopping Session</button>
+        <div class="join-section">
+          <input type="text" id="sessionId" placeholder="Enter Session ID">
+          <button id="joinSession" class="secondary-button">Join Session</button>
+        </div>
+      </div>
 
-  <input type="text" id="roomId" placeholder="Enter room ID">
-  <button id="createRoom">Create Room</button>
-  <button id="joinRoom">Join Room</button>
-  <button id="leaveSession" class="danger" disabled>Leave Session</button>
-  <div id="status"></div>
-
-  <div class="feature-controls">
-    <button id="toggleVoice">Start Voice Chat</button>
-    <button id="toggleRecording">Start Recording</button>
-    <button id="findDeals">Find Deals</button>
-    <button id="compareProducts">Compare Products</button>
+      <div id="active-session" class="section hidden">
+        <div class="session-info">
+          <p>Session ID: <span id="currentSessionId"></span></p>
+          <button id="copySessionId" class="icon-button">📋</button>
+        </div>
+        <div class="controls">
+          <button id="toggleVoice" class="feature-button">🎤 Voice Chat</button>
+          <button id="toggleCart" class="feature-button">🛒 Group Cart</button>
+        </div>
+        <button id="endSession" class="danger-button">End Session</button>
+      </div>
+    </div>
   </div>
-
-  <div id="feature-status"></div>
-
-  <!-- Load main script last -->
-  <script src="popup.js"></script>
+  <script src="js/popup.js"></script>
 </body>
 </html>
