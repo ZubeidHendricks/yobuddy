@@ -5,6 +5,9 @@ let currentSession = null;
 let username = localStorage.getItem('username');
 let cursorSharing = null;
 let priceTracker = null;
+let polling = null;
+let notifications = null;
+let socialFeatures = null;
 
 if (!username) {
   username = prompt('Enter your name:');
@@ -24,6 +27,10 @@ document.getElementById('joinRoom').addEventListener('click', () => {
   startSession(roomId);
 });
 
+document.getElementById('leaveSession').addEventListener('click', () => {
+  endSession();
+});
+
 function startSession(roomId) {
   if (currentSession) {
     endSession();
@@ -36,8 +43,11 @@ function startSession(roomId) {
 }
 
 function initializeFeatures(roomId) {
+  notifications = new NotificationSystem();
   cursorSharing = new CursorSharing(roomId);
   priceTracker = new PriceTracker(roomId);
+  polling = new Polling(roomId);
+  socialFeatures = new SocialFeatures(roomId);
 }
 
 function connectToRoom(roomId) {
@@ -65,7 +75,20 @@ function connectToRoom(roomId) {
           priceTracker?.updateUI();
           break;
         case 'price_alert':
-          showNotification(msg.data);
+          notifications?.showPriceAlert(msg.data.item, msg.data.currentPrice);
+          break;
+        case 'poll_update':
+          polling?.handlePollUpdate(msg.data);
+          notifications?.showPollCreated(msg.data);
+          break;
+        case 'user_joined':
+          notifications?.showUserJoined(msg.data.username);
+          break;
+        case 'user_left':
+          notifications?.showUserLeft(msg.data.username);
+          break;
+        case 'share_product':
+          notifications?.showProductShared(msg.data.sharedBy, msg.data.product);
           break;
       }
     });
@@ -78,30 +101,38 @@ function connectToRoom(roomId) {
       }
     });
 
+    // Announce join
+    port.postMessage({
+      type: 'user_joined',
+      data: { username }
+    });
+
     chrome.storage.local.set({ roomId: roomId });
   }
-}
 
-function showNotification(data) {
-  const notification = document.createElement('div');
-  notification.className = 'notification';
-  notification.innerHTML = `
-    <div>Price Alert!</div>
-    <div>${data.item.title}</div>
-    <div>New price: $${data.currentPrice}</div>
-  `;
-  document.body.appendChild(notification);
-  setTimeout(() => notification.remove(), 5000);
+  document.getElementById('status').textContent = `Connected to room: ${roomId}`;
 }
 
 function endSession() {
-  cursorSharing?.cleanup();
-  cursorSharing = null;
-  priceTracker = null;
-
   if (port) {
+    port.postMessage({
+      type: 'user_left',
+      data: { username }
+    });
     port.disconnect();
   }
+
+  cursorSharing?.cleanup();
+  priceTracker?.cleanup();
+  polling?.cleanup();
+  socialFeatures?.cleanup();
+
+  cursorSharing = null;
+  priceTracker = null;
+  polling = null;
+  notifications = null;
+  socialFeatures = null;
+  
   isConnected = false;
   currentSession = null;
   port = null;
