@@ -1,17 +1,48 @@
 let port;
 let isConnected = false;
 let recorder = null;
+let currentSession = null;
 
 document.getElementById('createRoom').addEventListener('click', () => {
   const roomId = Math.random().toString(36).substring(7);
   document.getElementById('roomId').value = roomId;
-  connectToRoom(roomId);
+  startSession(roomId);
 });
 
 document.getElementById('joinRoom').addEventListener('click', () => {
   const roomId = document.getElementById('roomId').value;
-  connectToRoom(roomId);
+  startSession(roomId);
 });
+
+document.getElementById('leaveSession')?.addEventListener('click', () => {
+  endSession();
+});
+
+function startSession(roomId) {
+  if (currentSession) {
+    endSession();
+  }
+  
+  currentSession = roomId;
+  connectToRoom(roomId);
+  document.getElementById('leaveSession').disabled = false;
+}
+
+function endSession() {
+  if (port) {
+    port.disconnect();
+  }
+  isConnected = false;
+  currentSession = null;
+  port = null;
+
+  // Clear UI
+  document.getElementById('status').textContent = 'Disconnected';
+  document.getElementById('leaveSession').disabled = true;
+  
+  // Clear storage
+  chrome.storage.local.remove('roomId');
+}
 
 function connectToRoom(roomId) {
   console.log('Connecting to room:', roomId);
@@ -31,7 +62,7 @@ function connectToRoom(roomId) {
       }
     });
 
-    // Listen for messages from other users
+    // Listen for messages
     port.onMessage.addListener((msg) => {
       console.log('Message received:', msg);
       if (msg.type === 'sync') {
@@ -40,19 +71,22 @@ function connectToRoom(roomId) {
             chrome.tabs.update(tabs[0].id, {url: msg.url});
           }
         });
+      } else if (msg.type === 'userLeft') {
+        document.getElementById('status').textContent = 
+          `Connected to room: ${roomId} (${msg.activeUsers} users)`;
       }
     });
 
-    // Handle disconnection
     port.onDisconnect.addListener(() => {
       console.log('Disconnected from room');
       isConnected = false;
-      setTimeout(() => connectToRoom(roomId), 1000);
+      if (currentSession) {
+        setTimeout(() => connectToRoom(roomId), 1000);
+      }
     });
 
-    // Listen for URL changes
     chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-      if (changeInfo.url && tab.active) {
+      if (changeInfo.url && tab.active && isConnected) {
         console.log('URL changed:', changeInfo.url);
         port.postMessage({
           type: 'navigation',
@@ -63,32 +97,5 @@ function connectToRoom(roomId) {
   }
 
   document.getElementById('status').textContent = `Connected to room: ${roomId}`;
-  // Save room ID
   chrome.storage.local.set({ roomId: roomId });
 }
-
-// Recording functionality
-document.getElementById('startRecording')?.addEventListener('click', () => {
-  if (!recorder) {
-    const roomId = document.getElementById('roomId').value;
-    recorder = new SessionRecorder(roomId);
-  }
-  recorder.startRecording();
-  updateRecordingUI(true);
-});
-
-document.getElementById('stopRecording')?.addEventListener('click', async () => {
-  if (recorder) {
-    const recording = await recorder.stopRecording();
-    updateRecordingUI(false);
-    addRecordingToList(recording);
-  }
-});
-
-// Load saved room ID on startup
-chrome.storage.local.get(['roomId'], function(result) {
-  if (result.roomId) {
-    document.getElementById('roomId').value = result.roomId;
-    connectToRoom(result.roomId);
-  }
-});
