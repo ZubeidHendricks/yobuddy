@@ -17,7 +17,18 @@
         <div id="sessionIdDisplay" class="session-display hidden">
           <span>Session ID:</span>
           <input type="text" id="generatedId" readonly>
-          <button id="copyId" class="icon-button">📋</button>
+          <button id="copyId" class="icon-button" title="Copy to clipboard">📋</button>
+          <div class="share-options">
+            <button id="shareWhatsapp" class="share-button" title="Share via WhatsApp">
+              <img src="images/whatsapp.png" alt="WhatsApp">
+            </button>
+            <button id="shareEmail" class="share-button" title="Share via Email">
+              <img src="images/email.png" alt="Email">
+            </button>
+            <button id="shareSMS" class="share-button" title="Share via SMS">
+              <img src="images/sms.png" alt="SMS">
+            </button>
+          </div>
         </div>
       </div>
 

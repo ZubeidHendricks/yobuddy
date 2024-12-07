@@ -1,34 +1,44 @@
-/* Updated styles */
-.session-display {
-  margin-top: 12px;
-  padding: 8px;
-  background: #f8f9fa;
-  border-radius: 4px;
+/* Additional styles for share buttons */
+.share-options {
   display: flex;
-  align-items: center;
   gap: 8px;
+  margin-top: 8px;
+  justify-content: center;
 }
 
-.session-display input {
-  flex: 1;
-  padding: 8px;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  font-size: 14px;
-  background: white;
-}
-
-.icon-button {
-  padding: 4px 8px;
+.share-button {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 16px;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
 }
 
-.icon-button:hover {
-  background: #e9ecef;
+.share-button:hover {
+  background-color: #e9ecef;
+}
+
+.share-button img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.session-display {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+  background: #f8f9fa;
   border-radius: 4px;
+}
+
+.session-display .input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Rest of the existing styles remain the same */
