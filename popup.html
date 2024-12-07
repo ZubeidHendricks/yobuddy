@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!-- Feature Scripts -->
+  <link rel="stylesheet" href="styles/main.css">
+  <!-- Load all feature scripts first -->
   <script src="features/voice-chat.js"></script>
   <script src="features/screen-recorder.js"></script>
   <script src="features/deal-finder.js"></script>
   <script src="features/product-comparison.js"></script>
   <script src="features/cursor-sharing.js"></script>
   <script src="features/price-tracker.js"></script>
-  
   <style>
     body { width: 300px; padding: 10px; }
     button { width: 100%; margin: 5px 0; padding: 8px; }
@@ -16,27 +16,30 @@
     .recording { color: red; }
     #recordingStatus { margin: 5px 0; }
     .danger { background: #dc3545; color: white; }
-    .error { color: #dc3545; padding: 5px; display: none; }
-    .success { color: #28a745; }
+    #status { margin: 10px 0; }
+    .error { color: #dc3545; }
   </style>
 </head>
 <body>
-  <div id="errorMessage" class="error"></div>
-  
+  <!-- Add error container -->
+  <div id="error" class="error"></div>
+
   <input type="text" id="roomId" placeholder="Enter room ID">
   <button id="createRoom">Create Room</button>
   <button id="joinRoom">Join Room</button>
   <button id="leaveSession" class="danger" disabled>Leave Session</button>
   <div id="status"></div>
 
-  <div class="controls">
+  <div class="feature-controls">
     <button id="toggleVoice">Start Voice Chat</button>
-    <button id="toggleRecord">Start Recording</button>
-    <div id="recordingStatus"></div>
+    <button id="toggleRecording">Start Recording</button>
+    <button id="findDeals">Find Deals</button>
+    <button id="compareProducts">Compare Products</button>
   </div>
 
-  <div id="participantsList"></div>
-  
+  <div id="feature-status"></div>
+
+  <!-- Load main script last -->
   <script src="popup.js"></script>
 </body>
 </html>
