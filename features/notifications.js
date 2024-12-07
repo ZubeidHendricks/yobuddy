@@ -1,75 +1,87 @@
 class NotificationSystem {
-  constructor(roomId) {
-    this.roomId = roomId;
-    this.db = firebase.firestore();
-    this.notificationsRef = this.db.collection('notifications').doc(roomId);
-    this.setupRealtime();
+  constructor() {
+    this.notifications = [];
+    this.setupUI();
   }
 
-  setupRealtime() {
-    this.notificationsRef.onSnapshot(snapshot => {
-      const notifications = snapshot.data()?.notifications || [];
-      this.processNewNotifications(notifications);
-    });
+  setupUI() {
+    this.container = document.createElement('div');
+    this.container.className = 'notifications-container';
+    document.body.appendChild(this.container);
   }
 
-  async notify(type, data) {
+  show(message, type = 'info') {
     const notification = {
-      id: Math.random().toString(36).substring(7),
+      id: Date.now().toString(),
+      message,
       type,
-      data,
-      timestamp: Date.now(),
-      read: false
+      timestamp: Date.now()
     };
 
-    await this.notificationsRef.update({
-      notifications: firebase.firestore.FieldValue.arrayUnion(notification)
-    });
+    this.notifications.push(notification);
+    this.renderNotification(notification);
 
-    this.showNotification(notification);
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => this.dismiss(notification.id), 5000);
   }
 
-  showNotification(notification) {
-    chrome.notifications.create(notification.id, {
-      type: 'basic',
-      iconUrl: this.getIconForType(notification.type),
-      title: this.getTitleForType(notification.type),
-      message: this.formatMessage(notification)
-    });
+  renderNotification(notification) {
+    const notifEl = document.createElement('div');
+    notifEl.className = `notification ${notification.type}`;
+    notifEl.dataset.notifId = notification.id;
+    
+    notifEl.innerHTML = `
+      <div class="notification-content">${notification.message}</div>
+      <button class="notification-dismiss">&times;</button>
+    `;
+
+    notifEl.querySelector('.notification-dismiss').onclick = () => 
+      this.dismiss(notification.id);
+
+    this.container.appendChild(notifEl);
+    setTimeout(() => notifEl.classList.add('show'), 10);
   }
 
-  getIconForType(type) {
-    const icons = {
-      'price_drop': 'icons/price-drop.png',
-      'new_vote': 'icons/vote.png',
-      'chat': 'icons/chat.png',
-      'payment': 'icons/payment.png'
-    };
-    return icons[type] || 'icons/default.png';
-  }
-
-  getTitleForType(type) {
-    const titles = {
-      'price_drop': 'Price Drop Alert!',
-      'new_vote': 'New Vote',
-      'chat': 'New Message',
-      'payment': 'Payment Update'
-    };
-    return titles[type] || 'Notification';
-  }
-
-  formatMessage(notification) {
-    switch (notification.type) {
-      case 'price_drop':
-        return `Price dropped to $${notification.data.newPrice} (was $${notification.data.oldPrice})`;
-      case 'new_vote':
-        return `${notification.data.user} voted on ${notification.data.item}`;
-      case 'chat':
-        return `${notification.data.sender}: ${notification.data.message}`;
-      case 'payment':
-        return `Payment ${notification.data.status}: $${notification.data.amount}`;
-      default:
-        return notification.data.message;
+  dismiss(notificationId) {
+    const notifEl = document.querySelector(
+      `[data-notif-id="${notificationId}"]`
+    );
+    if (notifEl) {
+      notifEl.classList.remove('show');
+      setTimeout(() => notifEl.remove(), 300);
     }
+
+    this.notifications = this.notifications.filter(
+      n => n.id !== notificationId
+    );
+  }
+
+  showUserJoined(username) {
+    this.show(`${username} joined the room`, 'success');
+  }
+
+  showUserLeft(username) {
+    this.show(`${username} left the room`, 'info');
+  }
+
+  showPriceAlert(product, newPrice) {
+    this.show(
+      `Price drop alert! ${product.title} is now $${newPrice}`,
+      'warning'
+    );
+  }
+
+  showPollCreated(poll) {
+    this.show(
+      `New poll created: ${poll.question}`,
+      'info'
+    );
+  }
+
+  showProductShared(username, product) {
+    this.show(
+      `${username} shared: ${product.title}`,
+      'info'
+    );
   }
 }
