@@ -1,58 +1,96 @@
+let sessions = {};
 let connections = {};
 
-// Handle messages from content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (sender.tab) {
-    const tabId = sender.tab.id;
-    
+  try {
     switch (message.type) {
       case 'START_SESSION':
-        handleStartSession(tabId);
+        handleStartSession(sender.tab?.id, sendResponse);
         break;
       case 'JOIN_SESSION':
-        handleJoinSession(tabId, message.sessionId);
+        handleJoinSession(sender.tab?.id, message.sessionId, sendResponse);
         break;
       case 'END_SESSION':
-        handleEndSession(tabId);
+        handleEndSession(sender.tab?.id, sendResponse);
         break;
     }
+  } catch (error) {
+    console.error('Error handling message:', error);
+    sendResponse({ error: error.message });
   }
   return true;
 });
 
-function handleStartSession(tabId) {
+function handleStartSession(tabId, sendResponse) {
+  if (!tabId) return;
+  
   const sessionId = generateSessionId();
-  connections[tabId] = { sessionId };
+  sessions[sessionId] = {
+    id: sessionId,
+    tabs: [tabId],
+    createdAt: Date.now()
+  };
+  
+  connections[tabId] = sessionId;
   
   chrome.tabs.sendMessage(tabId, {
     type: 'SESSION_CREATED',
     sessionId: sessionId
   });
+  
+  sendResponse({ sessionId });
 }
 
-function handleJoinSession(tabId, sessionId) {
-  connections[tabId] = { sessionId };
+function handleJoinSession(tabId, sessionId, sendResponse) {
+  if (!tabId || !sessionId) return;
+  
+  if (!sessions[sessionId]) {
+    sendResponse({ error: 'Session not found' });
+    return;
+  }
+  
+  sessions[sessionId].tabs.push(tabId);
+  connections[tabId] = sessionId;
   
   chrome.tabs.sendMessage(tabId, {
     type: 'SESSION_JOINED',
     sessionId: sessionId
   });
+  
+  sendResponse({ sessionId });
 }
 
-function handleEndSession(tabId) {
-  if (connections[tabId]) {
-    delete connections[tabId];
-    
-    chrome.tabs.sendMessage(tabId, {
-      type: 'SESSION_ENDED'
+function handleEndSession(tabId, sendResponse) {
+  if (!tabId) return;
+  
+  const sessionId = connections[tabId];
+  if (sessionId && sessions[sessionId]) {
+    // Notify all tabs in the session
+    sessions[sessionId].tabs.forEach(id => {
+      chrome.tabs.sendMessage(id, {
+        type: 'SESSION_ENDED'
+      });
     });
+    
+    delete sessions[sessionId];
   }
+  
+  delete connections[tabId];
+  sendResponse({ success: true });
 }
 
 function generateSessionId() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
+  return Math.random().toString(36).substring(2, 15);
 }
+
+// Clean up disconnected tabs
+chrome.tabs.onRemoved.addListener((tabId) => {
+  const sessionId = connections[tabId];
+  if (sessionId && sessions[sessionId]) {
+    sessions[sessionId].tabs = sessions[sessionId].tabs.filter(id => id !== tabId);
+    if (sessions[sessionId].tabs.length === 0) {
+      delete sessions[sessionId];
+    }
+  }
+  delete connections[tabId];
+});

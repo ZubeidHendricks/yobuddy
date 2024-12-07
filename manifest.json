@@ -1,30 +1,26 @@
 {
   "manifest_version": 3,
   "name": "YoBuddy",
-  "description": "Shop together with friends in real-time",
   "version": "1.0.0",
+  "description": "Shop together with friends in real-time",
   "permissions": [
     "activeTab",
-    "storage",
-    "scripting"
+    "storage"
   ],
   "action": {
-    "default_popup": "popup.html",
-    "default_icon": "icon.png"
+    "default_popup": "popup.html"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "content_scripts": [{
     "matches": ["<all_urls>"],
-    "js": [
-      "js/content.js"
-    ],
-    "css": ["css/content.css"]
+    "js": ["content.js"],
+    "css": ["content.css"]
   }],
-  "icons": {
-    "16": "icon.png",
-    "48": "icon.png",
-    "128": "icon.png"
-  }
+  "web_accessible_resources": [{
+    "resources": ["*.css", "*.js", "*.html"],
+    "matches": ["<all_urls>"]
+  }]
 }
