@@ -12,18 +12,26 @@
     </div>
     
     <div class="main-content">
-      <div id="session-controls" class="section">
-        <button id="startSession" class="primary-button">Start Shopping Session</button>
+      <div class="section">
+        <button id="generateSession" class="primary-button">Generate Session ID</button>
+        <div id="sessionIdDisplay" class="session-display hidden">
+          <span>Session ID:</span>
+          <input type="text" id="generatedId" readonly>
+          <button id="copyId" class="icon-button">📋</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Join Existing Session</h3>
         <div class="join-section">
           <input type="text" id="sessionId" placeholder="Enter Session ID">
-          <button id="joinSession" class="secondary-button">Join Session</button>
+          <button id="joinSession" class="secondary-button">Join</button>
         </div>
       </div>
 
       <div id="active-session" class="section hidden">
         <div class="session-info">
-          <p>Session ID: <span id="currentSessionId"></span></p>
-          <button id="copySessionId" class="icon-button">📋</button>
+          <p>Active Session: <span id="currentSessionId"></span></p>
         </div>
         <div class="controls">
           <button id="toggleVoice" class="feature-button">🎤 Voice Chat</button>
