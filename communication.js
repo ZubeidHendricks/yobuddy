@@ -1,72 +1,95 @@
-class VoiceChat {
+// Import Socket.IO client from CDN in manifest.json
+class Communication {
   constructor() {
-    this.isActive = false;
-    this.audioStream = null;
-    this.setupVoiceChat();
-  }
-
-  async setupVoiceChat() {
-    try {
-      this.voiceChatContainer = document.getElementById('voice-chat');
-      this.createVoiceChatUI();
-    } catch (error) {
-      console.error('Error setting up voice chat:', error);
-    }
-  }
-
-  createVoiceChatUI() {
-    const controls = document.createElement('div');
-    controls.className = 'voice-chat-controls';
-    controls.innerHTML = `
-      <button id="start-voice">Start Voice Chat</button>
-      <button id="end-voice" disabled>End Voice Chat</button>
-      <div id="participants"></div>
-    `;
+    this.socket = null;
+    this.roomId = null;
+    this.isConnected = false;
+    this.onUrlChangeCallbacks = new Set();
+    this.onParticipantChangeCallbacks = new Set();
     
-    this.voiceChatContainer.appendChild(controls);
+    this.connect();
+  }
+
+  connect() {
+    // Connect to your deployed server
+    this.socket = io('https://your-server-url.com');
     
-    document.getElementById('start-voice').addEventListener('click', () => this.startVoiceChat());
-    document.getElementById('end-voice').addEventListener('click', () => this.endVoiceChat());
+    this.socket.on('connect', () => {
+      this.isConnected = true;
+      console.log('Connected to server');
+    });
+
+    this.socket.on('room-created', ({ roomId }) => {
+      this.roomId = roomId;
+      this.notifyParticipantChange({ count: 1 });
+    });
+
+    this.socket.on('room-joined', ({ roomId, currentUrl }) => {
+      this.roomId = roomId;
+      if (currentUrl) {
+        this.notifyUrlChange(currentUrl);
+      }
+    });
+
+    this.socket.on('url-changed', ({ url }) => {
+      this.notifyUrlChange(url);
+    });
+
+    this.socket.on('participant-joined', (data) => {
+      this.notifyParticipantChange(data);
+    });
+
+    this.socket.on('participant-left', (data) => {
+      this.notifyParticipantChange(data);
+    });
+
+    this.socket.on('error', ({ message }) => {
+      console.error('Server error:', message);
+    });
   }
 
-  async startVoiceChat() {
-    try {
-      this.audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.isActive = true;
-      document.getElementById('start-voice').disabled = true;
-      document.getElementById('end-voice').disabled = false;
-      // Here you would implement the actual WebRTC connection logic
-    } catch (error) {
-      console.error('Error starting voice chat:', error);
+  createRoom() {
+    if (this.isConnected) {
+      this.socket.emit('create-room');
     }
   }
 
-  endVoiceChat() {
-    if (this.audioStream) {
-      this.audioStream.getTracks().forEach(track => track.stop());
-      this.audioStream = null;
+  joinRoom(roomId) {
+    if (this.isConnected) {
+      this.socket.emit('join-room', { roomId });
     }
-    this.isActive = false;
-    document.getElementById('start-voice').disabled = false;
-    document.getElementById('end-voice').disabled = true;
+  }
+
+  updateUrl(url) {
+    if (this.isConnected && this.roomId) {
+      this.socket.emit('url-change', { roomId: this.roomId, url });
+    }
+  }
+
+  onUrlChange(callback) {
+    this.onUrlChangeCallbacks.add(callback);
+  }
+
+  onParticipantChange(callback) {
+    this.onParticipantChangeCallbacks.add(callback);
+  }
+
+  notifyUrlChange(url) {
+    this.onUrlChangeCallbacks.forEach(callback => callback(url));
+  }
+
+  notifyParticipantChange(data) {
+    this.onParticipantChangeCallbacks.forEach(callback => callback(data));
+  }
+
+  disconnect() {
+    if (this.socket) {
+      this.socket.disconnect();
+    }
   }
 }
 
-class CommunicationHub {
-  constructor() {
-    this.voiceChat = new VoiceChat();
-    this.setupCommunication();
-  }
-
-  setupCommunication() {
-    // Additional communication setup logic
-  }
-}
-
-// Export the classes for use in other files
+// Export for use in other files
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    VoiceChat,
-    CommunicationHub
-  };
+  module.exports = Communication;
 }
