@@ -1,7 +1,3 @@
-import { app, auth, database, provider } from './firebase-config.js';
-import { signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-import { ref, set, onValue, remove, off } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
-
 class YoBuddyApp {
   constructor() {
     this.initElements();
@@ -55,7 +51,7 @@ class YoBuddyApp {
 
   async signIn() {
     try {
-      await signInWithPopup(auth, provider);
+      await auth.signInWithPopup(provider);
     } catch (error) {
       this.showStatus('Sign in failed: ' + error.message, 'error');
     }
@@ -66,7 +62,7 @@ class YoBuddyApp {
       if (this.currentRoom) {
         await this.leaveRoom();
       }
-      await signOut(auth);
+      await auth.signOut();
     } catch (error) {
       this.showStatus('Sign out failed: ' + error.message, 'error');
     }
@@ -74,10 +70,10 @@ class YoBuddyApp {
 
   async createRoom() {
     const roomCode = this.generateRoomCode();
-    const roomRef = ref(database, `rooms/${roomCode}`);
+    const roomRef = database.ref(`rooms/${roomCode}`);
     
     try {
-      await set(roomRef, {
+      await roomRef.set({
         creator: this.currentUser.uid,
         createdAt: Date.now(),
         currentUrl: null
@@ -101,17 +97,17 @@ class YoBuddyApp {
   }
 
   async joinRoomById(roomCode) {
-    const roomRef = ref(database, `rooms/${roomCode}`);
+    const roomRef = database.ref(`rooms/${roomCode}`);
     
     try {
-      onValue(roomRef, (snapshot) => {
+      roomRef.once('value', (snapshot) => {
         if (!snapshot.exists()) {
           this.showStatus('Room not found', 'error');
           return;
         }
         
         this.currentRoom = roomCode;
-        set(ref(database, `rooms/${roomCode}/participants/${this.currentUser.uid}`), {
+        database.ref(`rooms/${roomCode}/participants/${this.currentUser.uid}`).set({
           name: this.currentUser.displayName,
           avatar: this.currentUser.photoURL,
           joinedAt: Date.now()
@@ -129,10 +125,10 @@ class YoBuddyApp {
   }
 
   setupRoomListeners(roomCode) {
-    this.roomRef = ref(database, `rooms/${roomCode}`);
+    this.roomRef = database.ref(`rooms/${roomCode}`);
     
     // Listen for URL updates
-    onValue(ref(database, `rooms/${roomCode}/currentUrl`), (snapshot) => {
+    database.ref(`rooms/${roomCode}/currentUrl`).on('value', (snapshot) => {
       const url = snapshot.val();
       if (url) {
         chrome.runtime.sendMessage({ type: 'URL_UPDATE', url });
@@ -140,14 +136,14 @@ class YoBuddyApp {
     });
     
     // Listen for participant updates
-    onValue(ref(database, `rooms/${roomCode}/participants`), (snapshot) => {
+    database.ref(`rooms/${roomCode}/participants`).on('value', (snapshot) => {
       this.updateParticipantList(snapshot.val());
     });
   }
 
   removeRoomListeners() {
     if (this.roomRef) {
-      off(this.roomRef);
+      this.roomRef.off();
     }
   }
 

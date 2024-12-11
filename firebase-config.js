@@ -1,8 +1,3 @@
-// Import Firebase modules
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-import { getDatabase } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
-
 const firebaseConfig = {
   apiKey: "AIzaSyDq0BESYmeLklyKaNgA7KlGGR4TyHinHuo",
   authDomain: "yobuddy-89a58.firebaseapp.com",
@@ -13,9 +8,12 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const database = getDatabase(app);
-const provider = new GoogleAuthProvider();
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const database = firebase.database();
+const provider = new firebase.auth.GoogleAuthProvider();
 
-export { app, auth, database, provider };
+// Export for use in other files
+window.auth = auth;
+window.database = database;
+window.provider = provider;
