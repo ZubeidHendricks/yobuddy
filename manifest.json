@@ -12,9 +12,6 @@
     "https://*.firebaseio.com/*",
     "https://*.googleapis.com/*"
   ],
-  "content_security_policy": {
-    "extension_pages": "script-src 'self' https://www.gstatic.com/ https://*.firebaseio.com https://www.googleapis.com; object-src 'self'"
-  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": "icon.png"
