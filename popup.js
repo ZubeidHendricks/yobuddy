@@ -1,6 +1,23 @@
-import { auth, provider, database } from './firebase-config.js';
-import { ref, set, onValue, remove, off } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
-import { signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+import { getDatabase, ref, set, onValue, remove, off } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDq0BESYmeLklyKaNgA7KlGGR4TyHinHuo",
+  authDomain: "yobuddy-89a58.firebaseapp.com",
+  projectId: "yobuddy-89a58",
+  storageBucket: "yobuddy-89a58.firebasestorage.app",
+  messagingSenderId: "873396866801",
+  appId: "1:873396866801:web:b84e17c8a6514496c3a350",
+  measurementId: "G-87LCDY7YN6"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const database = getDatabase(app);
+const provider = new GoogleAuthProvider();
 
 class YoBuddyApp {
   constructor() {
@@ -128,24 +145,18 @@ class YoBuddyApp {
     }
   }
 
-  async leaveRoom() {
-    if (!this.currentRoom) return;
-    
-    try {
-      await remove(ref(database, `rooms/${this.currentRoom}/participants/${this.currentUser.uid}`));
-      this.removeRoomListeners();
-      this.currentRoom = null;
-      chrome.storage.local.remove('roomCode');
-      this.showRoomControls();
-      this.showStatus('Left room', 'success');
-    } catch (error) {
-      this.showStatus('Failed to leave room: ' + error.message, 'error');
-    }
-  }
-
   setupRoomListeners(roomCode) {
     this.roomRef = ref(database, `rooms/${roomCode}`);
     
+    // Listen for URL updates
+    onValue(ref(database, `rooms/${roomCode}/currentUrl`), (snapshot) => {
+      const url = snapshot.val();
+      if (url) {
+        chrome.runtime.sendMessage({ type: 'URL_UPDATE', url });
+      }
+    });
+    
+    // Listen for participant updates
     onValue(ref(database, `rooms/${roomCode}/participants`), (snapshot) => {
       this.updateParticipantList(snapshot.val());
     });

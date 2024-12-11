@@ -1,15 +1,33 @@
-import { database } from './firebase-config.js';
-import { ref, set } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
+// Background script using chrome APIs only
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'URL_CHANGED') {
+    chrome.storage.local.get('roomCode', ({ roomCode }) => {
+      if (roomCode) {
+        // Broadcast to all tabs in the room
+        chrome.tabs.query({}, (tabs) => {
+          tabs.forEach(tab => {
+            if (tab.id !== sender.tab.id) {
+              chrome.tabs.sendMessage(tab.id, {
+                type: 'URL_UPDATE',
+                url: message.url
+              });
+            }
+          });
+        });
+      }
+    });
+  }
+});
 
 // Listen for tab updates
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.active) {
-    // Get current room from storage
     chrome.storage.local.get('roomCode', ({ roomCode }) => {
       if (roomCode) {
-        // Update URL in Firebase
-        const urlRef = ref(database, `rooms/${roomCode}/currentUrl`);
-        set(urlRef, tab.url);
+        chrome.runtime.sendMessage({
+          type: 'URL_CHANGED',
+          url: tab.url
+        });
       }
     });
   }
@@ -18,13 +36,12 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 // Listen for tab activation
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
   const tab = await chrome.tabs.get(activeInfo.tabId);
-  
-  // Get current room from storage
   chrome.storage.local.get('roomCode', ({ roomCode }) => {
     if (roomCode) {
-      // Update URL in Firebase
-      const urlRef = ref(database, `rooms/${roomCode}/currentUrl`);
-      set(urlRef, tab.url);
+      chrome.runtime.sendMessage({
+        type: 'URL_CHANGED',
+        url: tab.url
+      });
     }
   });
 });
