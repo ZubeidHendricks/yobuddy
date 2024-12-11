@@ -1,3 +1,4 @@
+// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDq0BESYmeLklyKaNgA7KlGGR4TyHinHuo",
   authDomain: "yobuddy-89a58.firebaseapp.com",
@@ -9,11 +10,3 @@ const firebaseConfig = {
 
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const database = firebase.database();
-const provider = new firebase.auth.GoogleAuthProvider();
-
-// Export for use in other files
-window.auth = auth;
-window.database = database;
-window.provider = provider;
