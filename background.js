@@ -1,39 +1,31 @@
-// Simple in-memory session storage
-const sessions = new Map();
+// Import Firebase modules
+import { database } from './firebase-config.js';
+import { ref, set } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log('Message received:', message);
-
-    switch (message.type) {
-        case 'CREATE_SESSION':
-            const newSessionId = generateSessionId();
-            sessions.set(newSessionId, {
-                id: newSessionId,
-                createdAt: Date.now()
-            });
-            console.log('Session created:', newSessionId);
-            sendResponse({ sessionId: newSessionId });
-            break;
-
-        case 'JOIN_SESSION':
-            const exists = sessions.has(message.sessionId);
-            console.log('Join session attempt:', message.sessionId, exists);
-            sendResponse({ success: exists });
-            break;
-
-        case 'END_SESSION':
-            sessions.delete(message.sessionId);
-            sendResponse({ success: true });
-            break;
-    }
-    return true;
+// Listen for tab updates
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.active) {
+    // Get current room from storage
+    chrome.storage.local.get('roomCode', ({ roomCode }) => {
+      if (roomCode) {
+        // Update URL in Firebase
+        const urlRef = ref(database, `rooms/${roomCode}/currentUrl`);
+        set(urlRef, tab.url);
+      }
+    });
+  }
 });
 
-function generateSessionId() {
-    const chars = 'ABCDEF0123456789';
-    let result = '';
-    for (let i = 0; i < 6; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
+// Listen for tab activation
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  const tab = await chrome.tabs.get(activeInfo.tabId);
+  
+  // Get current room from storage
+  chrome.storage.local.get('roomCode', ({ roomCode }) => {
+    if (roomCode) {
+      // Update URL in Firebase
+      const urlRef = ref(database, `rooms/${roomCode}/currentUrl`);
+      set(urlRef, tab.url);
     }
-    return result;
-}
+  });
+});
