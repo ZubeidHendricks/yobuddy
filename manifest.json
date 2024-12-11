@@ -9,18 +9,15 @@
     "tabs"
   ],
   "host_permissions": [
-    "*://*/*"
+    "https://*.firebaseio.com/*",
+    "https://*.googleapis.com/*"
   ],
-  "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'"
-  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": "icon.png"
   },
   "background": {
-    "service_worker": "background.js",
-    "type": "module"
+    "service_worker": "background.js"
   },
   "content_scripts": [{
     "matches": ["<all_urls>"],
