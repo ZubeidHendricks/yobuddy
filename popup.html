@@ -1,41 +1,46 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>YoBuddy</title>
-    <link rel="stylesheet" href="popup.css">
+  <title>YoBuddy</title>
+  <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>YoBuddy</h1>
-        </div>
-
-        <div class="section">
-            <button id="generateSession" class="primary-button">Create New Session</button>
-            
-            <div id="sessionDisplay" class="session-info hidden">
-                <p>Your Session ID:</p>
-                <div class="id-group">
-                    <input type="text" id="sessionId" readonly>
-                    <button id="copyId" class="secondary-button">Copy</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="section">
-            <h3>Join Existing Session</h3>
-            <div class="join-group">
-                <input type="text" id="joinSessionId" placeholder="Enter Session ID">
-                <button id="joinSession" class="secondary-button">Join</button>
-            </div>
-        </div>
-
-        <div id="activeSession" class="section hidden">
-            <div class="status">Session Active</div>
-            <button id="endSession" class="danger-button">End Session</button>
-        </div>
+  <div class="container">
+    <div id="auth-screen" class="screen">
+      <h1>YoBuddy</h1>
+      <button id="sign-in" class="btn primary">Sign in with Google</button>
     </div>
-    <script src="popup.js"></script>
+
+    <div id="main-screen" class="screen hidden">
+      <div class="user-info">
+        <img id="user-avatar" class="avatar" src="" alt="Profile">
+        <span id="user-name"></span>
+        <button id="sign-out" class="btn small">Sign Out</button>
+      </div>
+
+      <div id="room-controls">
+        <button id="create-room" class="btn primary">Create Room</button>
+        <div class="divider">or</div>
+        <div class="join-section">
+          <input type="text" id="room-code" placeholder="Enter Room Code" maxlength="6">
+          <button id="join-room" class="btn secondary">Join Room</button>
+        </div>
+      </div>
+
+      <div id="active-room" class="hidden">
+        <h2>Room: <span id="room-code-display"></span></h2>
+        <button id="copy-code" class="btn small">Copy Code</button>
+        <div class="participants">
+          <h3>Shopping Buddies</h3>
+          <ul id="participant-list"></ul>
+        </div>
+        <button id="leave-room" class="btn danger">Leave Room</button>
+      </div>
+    </div>
+
+    <div id="status" class="status hidden"></div>
+  </div>
+  <script type="module" src="firebase-config.js"></script>
+  <script type="module" src="popup.js"></script>
 </body>
 </html>
