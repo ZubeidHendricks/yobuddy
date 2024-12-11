@@ -1,4 +1,3 @@
-// Import Firebase modules
 import { database } from './firebase-config.js';
 import { ref, set } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js";
 
